@@ -570,15 +570,24 @@ void TaskProjGroup::AutoDistributeClicked(bool clicked)
     multiView->recomputeFeature();
 }
 
-void TaskProjGroup::spacingChanged()
+ void TaskProjGroup::spacingChanged()
 {
     if (blockUpdate || !multiView) {
         return;
     }
+
     multiView->spacingX.setValue(ui->sbXSpacing->value().getValue());
     multiView->spacingY.setValue(ui->sbYSpacing->value().getValue());
-    multiView->recomputeFeature();
+
+    // Update view position without calling OCCT for recompute
+    for (App::DocumentObject* obj : multiView->Views.getValues()) {
+        auto* viewItem = dynamic_cast<TechDraw::DrawProjGroupItem*>(obj);
+        if (viewItem) {
+            viewItem->autoPosition();
+        }
+    }
 }
+
 
 void TaskProjGroup::updateTask()
 {
@@ -846,6 +855,18 @@ bool TaskProjGroup::reject()
         //set the DPG and its views back to entry state.
         if (Gui::Command::hasPendingCommand()) {
             Gui::Command::abortCommand();
+        }
+        // Restore views to initial spacing
+        if (multiView) {
+            multiView->spacingX.setValue(m_saveSpacingX);
+            multiView->spacingY.setValue(m_saveSpacingY);
+
+            for (App::DocumentObject* obj : multiView->Views.getValues()) {
+                auto* viewItem = dynamic_cast<TechDraw::DrawProjGroupItem*>(obj);
+                if (viewItem) {
+                    viewItem->autoPosition();
+                }
+            }
         }
     }
     Gui::Command::runCommand(Gui::Command::Gui, "Gui.ActiveDocument.resetEdit()");
