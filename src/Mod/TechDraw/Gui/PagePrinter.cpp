@@ -225,7 +225,6 @@ void PagePrinter::printAllPdf(QPrinter* printer, App::Document* doc)
         }
 
         auto ourScene = vpp->getQGSPage();
-        ourScene->setExportingPdf(true);
 
         auto dPage = static_cast<TechDraw::DrawPage*>(obj);
         double width{0};
