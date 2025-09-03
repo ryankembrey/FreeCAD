@@ -22,6 +22,7 @@
  ***************************************************************************/
 
 #include "PreCompiled.h"
+#include <cstdio>
 #ifndef _PreComp_
 # include <QApplication>
 # include <QGraphicsSceneHoverEvent>
@@ -114,6 +115,7 @@ QGIView::QGIView()
     QSize sizeLock = m_lock->imageSize();
     m_lockWidth = (double) sizeLock.width();
     m_lockHeight = (double) sizeLock.height();
+
 
     m_lock->hide();
 }
@@ -699,8 +701,32 @@ void QGIView::prepareCaption()
                                  Preferences::labelFontSizeMM());
     m_font.setPixelSize(fontSize);
     m_caption->setFont(m_font);
-    QString captionStr = QString::fromUtf8(getViewObject()->Caption.getValue());
-    m_caption->setPlainText(captionStr);
+
+    // Check for Null
+     auto* feature = getViewObject();
+    if (!feature) {
+        m_caption->setPlainText(QString());
+        return;
+    }
+
+    std::string captionValue = feature->Caption.getValue();
+    std::string labelValue = feature->Label.getValue();
+    bool keepLabel = false; // Default to false for safety
+
+    Gui::ViewProvider* vp = QGIView::getViewProvider(feature);
+    auto* vpdv = dynamic_cast<ViewProviderDrawingView*>(vp);
+    if (vpdv) {
+        keepLabel = vpdv->KeepLabel.getValue();
+    }
+
+    QString stringToDisplay;
+    if (keepLabel && captionValue.empty()) {
+        stringToDisplay = QString::fromStdString(labelValue);
+    } else {
+        stringToDisplay = QString::fromStdString(captionValue);
+    }
+
+    m_caption->setPlainText(stringToDisplay);
 }
 
 void QGIView::layoutDecorations(const QRectF& contentArea,
